@@ -2,6 +2,10 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Computer.Domain.Bus.Contracts", "Computer.Domain.Bus.Contracts\Computer.Domain.Bus.Contracts.csproj", "{F9E40DA8-1C79-4A7D-8BC9-6EA28032C6C3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Computer.Domain.Bus.Reactive", "Computer.Domain.Bus.Reactive\Computer.Domain.Bus.Reactive.csproj", "{3CDD7E6E-6C43-4580-AA31-37DDA86A4ECA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Computer.Domain.Bus.Integration", "Computer.Domain.Bus.Integration\Computer.Domain.Bus.Integration.csproj", "{BFD4AF87-7A8B-4F31-967C-AB6EC6444D1F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +16,13 @@ Global
 		{F9E40DA8-1C79-4A7D-8BC9-6EA28032C6C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F9E40DA8-1C79-4A7D-8BC9-6EA28032C6C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F9E40DA8-1C79-4A7D-8BC9-6EA28032C6C3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3CDD7E6E-6C43-4580-AA31-37DDA86A4ECA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3CDD7E6E-6C43-4580-AA31-37DDA86A4ECA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3CDD7E6E-6C43-4580-AA31-37DDA86A4ECA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3CDD7E6E-6C43-4580-AA31-37DDA86A4ECA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BFD4AF87-7A8B-4F31-967C-AB6EC6444D1F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BFD4AF87-7A8B-4F31-967C-AB6EC6444D1F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BFD4AF87-7A8B-4F31-967C-AB6EC6444D1F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BFD4AF87-7A8B-4F31-967C-AB6EC6444D1F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
