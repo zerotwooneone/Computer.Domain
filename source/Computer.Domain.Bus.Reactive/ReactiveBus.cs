@@ -50,9 +50,10 @@ public class ReactiveBus : IBus
             return busSubject1.Observable
                 .SelectMany(async p =>
                 {
-                    await callback(p.Param,type, p.EventId, p.CorrelationId);
+                    await callback(p.Param,type, p.EventId, p.CorrelationId).ConfigureAwait(false);
                     return Unit.Default;
                 })
+                .Retry() //todo: need to do something with errors
                 .Subscribe();
         }
 
@@ -81,7 +82,7 @@ public class ReactiveBus : IBus
             return busSubject1.Observable
                 .SelectMany(async p =>
                 {
-                    await callback(p.EventId, p.CorrelationId);
+                    await callback(p.EventId, p.CorrelationId).ConfigureAwait(false);
                     return Unit.Default;
                 })
                 .Subscribe();
