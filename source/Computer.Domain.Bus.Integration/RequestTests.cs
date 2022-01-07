@@ -14,11 +14,14 @@ public class RequestTests
     private IBus _bus;
     private IRequestService _requestService;
     private TestScheduler _scheduler;
+    private ReactiveBus _reactiveBus;
+
     [SetUp]
     public void Setup()
     {
         _scheduler = new TestScheduler();
-        _bus = new ReactiveBus(new TaskPoolScheduler(new TaskFactory()));//_scheduler);
+        _reactiveBus = new ReactiveBus(new TaskPoolScheduler(new TaskFactory()));//_scheduler);
+        _bus = new CallbackBus(_reactiveBus);
         _requestService = new ReactiveResponseService(_bus);
     }
 

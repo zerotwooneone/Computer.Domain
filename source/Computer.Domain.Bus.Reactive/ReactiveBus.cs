@@ -4,11 +4,13 @@ using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Computer.Domain.Bus.Contracts;
+using Computer.Domain.Bus.Reactive.Contracts;
+using Computer.Domain.Bus.Reactive.Contracts.Model;
 using Computer.Domain.Bus.Reactive.Model;
 
 namespace Computer.Domain.Bus.Reactive;
 
-public class ReactiveBus : IBus
+public class ReactiveBus : IReactiveBus
 {
     private readonly IScheduler _scheduler;
     private readonly ConcurrentDictionary<string, BusSubject> _subjectsByName;
@@ -41,72 +43,49 @@ public class ReactiveBus : IBus
         return Task.CompletedTask;
     }
 
-    public IDisposable Subscribe(string subject, Type type, IBus.ParameterCallback callback)
+    public IObservable<IBusEvent> Subscribe(string subject, Type type)
     {
-        IDisposable? subscription = null;
-
-        IDisposable InnerSubscribe(BusSubject busSubject1)
-        {
-            return busSubject1.Observable
-                .SelectMany(async p =>
-                {
-                    await callback(p.Param,type, p.EventId, p.CorrelationId).ConfigureAwait(false);
-                    return Unit.Default;
-                })
-                .Retry() //todo: need to do something with errors
-                .Subscribe();
-        }
-
-        _subjectsByName.AddOrUpdate(subject,
+        var bs = _subjectsByName.GetOrAdd(subject,
             s =>
             {
                 var newSubject = new Subject<BusEvent>();
-                var observable = ObservableFactory(newSubject, subject);
-                var busSubject = new BusSubject(s, newSubject, observable, type);
-                subscription = InnerSubscribe(busSubject);
+                var (bareObservable, paramObservable) = ObservableFactory(newSubject, subject, type);
+                var busSubject = new BusSubject(s, newSubject, bareObservable, paramObservable, type);
                 
                 return busSubject;
-            }, (s, bs) =>
-            {
-                subscription = InnerSubscribe(bs);
-                return bs;
             });
-        return subscription ?? _disposableDummy;
+        if (bs.ParamObservable == null)
+        {
+            throw new InvalidOperationException($"this subject {subject} is not configured to return a param");
+        }
+
+        if (!type.IsAssignableFrom(bs.Type))
+        {
+            throw new InvalidOperationException($"this subject {subject} cannot return type {type}. Use {bs.Type?.ToString() ?? "no type param"} instead");
+        }
+        return bs.ParamObservable;
     }
 
-    public IDisposable Subscribe(string subject, IBus.BareCallback callback)
+    public IObservable<IBareEvent> Subscribe(string subject)
     {
-        IDisposable? subscription = null;
-        IDisposable InnerSubscribe(BusSubject busSubject1)
-        {
-            return busSubject1.Observable
-                .SelectMany(async p =>
-                {
-                    await callback(p.EventId, p.CorrelationId).ConfigureAwait(false);
-                    return Unit.Default;
-                })
-                .Subscribe();
-        }
-        _subjectsByName.AddOrUpdate(subject,
+        var bs = _subjectsByName.GetOrAdd(subject,
             s =>
             {
                 var newSubject = new Subject<BusEvent>();
-                var observable = ObservableFactory(newSubject, subject);
-                var busSubject = new BusSubject(s, newSubject, observable, null);
-                subscription = InnerSubscribe(busSubject);
+                var (bareObservable, _) = ObservableFactory(newSubject, subject, null);
+                var busSubject = new BusSubject(s, newSubject, bareObservable, null, null);
                 
                 return busSubject;
-            }, (s, bs) =>
-            {
-                subscription = InnerSubscribe(bs);
-                return bs;
             });
-        return subscription ?? _disposableDummy;
+        return bs.BareObservable;
     }
     
-    private IObservable<BusEvent> ObservableFactory(Subject<BusEvent> subject, string subjectName)
+    private (IObservable<BusEvent>, IObservable<IBusEvent>?) ObservableFactory(
+        Subject<BusEvent> subject, 
+        string subjectName,
+        Type? type)
     {
-        return subject
+        var eventObservable = subject
             .AsObservable()
             .ObserveOn(_scheduler)
             .Publish()
@@ -115,7 +94,24 @@ public class ReactiveBus : IBus
             {
                 _subjectsByName.Remove(subjectName, out _);
             });
+
+        ParamEvent ToParamEvent(BusEvent b)
+        {
+            if (!type.IsAssignableFrom(b.Type))
+            {
+                throw new InvalidCastException($"unable to cast. expected:{type} actual:{b.Type}");
+            }
+            return new ParamEvent(b.Param, b.Type, b.EventId, b.CorrelationId);
+        }
+
+        var paramObservable = type == null
+            ? null
+            : eventObservable
+                .Select(ToParamEvent);
+        return (eventObservable, paramObservable);
     }
+
+    private record ParamEvent(object? Param, Type Type, string EventId, string CorrelationId) : IBusEvent;
     
     private readonly DisposableDummy _disposableDummy = new();
     private class DisposableDummy : IDisposable

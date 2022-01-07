@@ -1,6 +1,8 @@
-﻿namespace Computer.Domain.Bus.Reactive.Model;
+﻿using Computer.Domain.Bus.Reactive.Contracts.Model;
 
-internal sealed record BusEvent
+namespace Computer.Domain.Bus.Reactive.Model;
+
+internal sealed record BusEvent : IBareEvent
 {
     public BusEvent(Type? type = null, object? param = null, string? eventId = null,
         string? correlationId = null)

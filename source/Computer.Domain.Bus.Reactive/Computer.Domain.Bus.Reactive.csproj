@@ -7,10 +7,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Computer.Domain.Bus.Contracts\Computer.Domain.Bus.Contracts.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
+      <PackageReference Include="Computer.Domain.Bus.Contracts" Version="0.0.1" />
+      <PackageReference Include="Computer.Domain.Bus.Reactive.Contracts" Version="0.0.1" />
       <PackageReference Include="System.Reactive.Linq" Version="5.0.0" />
     </ItemGroup>
 
