@@ -66,7 +66,7 @@ public class ReactiveRequestService : IRequestService
             {
                 var response = await createResponse(b.Param, b.Type, b.EventId, b.CorrelationId).ConfigureAwait(false);
 
-                if (requestType.IsAssignableFrom(response.Item2))
+                if (!responseType.IsAssignableFrom(response.Item2))
                 {
                     throw new InvalidOperationException(
                         $"response type was unexpected. wanted:{responseType} got:{response.Item2}");
