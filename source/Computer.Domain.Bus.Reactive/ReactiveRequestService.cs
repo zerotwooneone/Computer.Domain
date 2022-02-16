@@ -3,7 +3,6 @@ using System.Reactive.Threading.Tasks;
 using Computer.Domain.Bus.Contracts;
 using Computer.Domain.Bus.Contracts.Model;
 using Computer.Domain.Bus.Reactive.Contracts;
-using Computer.Domain.Bus.Reactive.Contracts.Model;
 using Computer.Domain.Bus.Reactive.Model;
 
 namespace Computer.Domain.Bus.Reactive;

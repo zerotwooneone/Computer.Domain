@@ -31,17 +31,17 @@ public class RequestTests
         const string requestString = "some test";
         var responseGuid = Guid.Parse("1b694445-3510-4a07-a920-0e40a3f18b91");
         
-        Task<Response?> CreateResponse(Request? request, string eventId, string correlationId)
+        async Task<Response?> CreateResponse(Request? request, string eventId, string correlationId)
         {
+            await Task.Delay(1).ConfigureAwait(false);
             Assert.AreEqual(requestEventId, eventId);
             Assert.AreEqual(requestCorrelationId, correlationId);
             Assert.AreEqual(requestString, request?.SValue);
-            return Task.FromResult<Response?>(new Response(responseGuid));
+            return new Response(responseGuid);
         }
         const string requestSubject = "requestSubject";
-        var sub = _requestService.Listen<Request, Response>(requestSubject, responseSubject, CreateResponse);
+        using var sub = _requestService.Listen<Request, Response>(requestSubject, responseSubject, CreateResponse);
 
-        
         var request = new Request(requestString, 12.34d);
         
         var response = await _requestService.Request<Request, Response>(request, requestSubject, responseSubject,
