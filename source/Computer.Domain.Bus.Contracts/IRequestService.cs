@@ -18,9 +18,13 @@ public interface IRequestService
         Type requestType,
         string responseSubject,
         Type responseType, 
-        CreateResponse callback);
+        CreateResponse callback,
+        ErrorCallback? errorCallback = null);
     
     public delegate Task<(object?, Type)> CreateResponse(object? param, Type? type, string eventId, string correlationId);
+
+    public delegate void ErrorCallback(string reason, string? eventId, string? correlationId, object? param,
+        Type? type);
 }
 
 public static class RequestServiceExtensions
@@ -51,16 +55,35 @@ public static class RequestServiceExtensions
     
     public delegate Task<TResponse?> CreateResponse<in TRequest, TResponse>(TRequest? param, string eventId, string correlationId);
 
+    public delegate void ErrorCallback<in TResponse>(string reason, string? eventId, string? correlationId,
+        TResponse? response);
+
     public static IDisposable Listen<TRequest, TResponse>(this IRequestService requestService,
         string requestSubject,
         string responseSubject,
-        CreateResponse<TRequest, TResponse> createResponse)
+        CreateResponse<TRequest, TResponse> createResponse,
+        ErrorCallback<TResponse>? errorCallback = null)
     {
         async Task<(object?, Type)> InnerCallback(object? param, Type? type, string eventId, string correlationId)
         {
             var response = await createResponse((TRequest?)param, eventId, correlationId).ConfigureAwait(false);
             return (response, typeof(TResponse));
         }
-        return requestService.Listen(requestSubject, typeof(TRequest), responseSubject, typeof(TResponse), InnerCallback);
+
+        void InnerErrorCallback(string reason, string? eid, string? cid, object? o, Type? t)
+        {
+            errorCallback(reason, eid, cid, default);
+        }
+
+        var innerErrorCallback = errorCallback == null
+            ? (IRequestService.ErrorCallback?)null
+            : InnerErrorCallback;
+        return requestService.Listen(
+            requestSubject, 
+            typeof(TRequest), 
+            responseSubject, 
+            typeof(TResponse), 
+            InnerCallback,
+            innerErrorCallback);
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Reactive.Linq;
+﻿using System.Reactive;
+using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
 using Computer.Domain.Bus.Contracts;
 using Computer.Domain.Bus.Contracts.Model;
@@ -58,26 +59,75 @@ public class ReactiveRequestService : IRequestService
         Type requestType,
         string responseSubject,
         Type responseType, 
-        IRequestService.CreateResponse createResponse)
+        IRequestService.CreateResponse createResponse,
+        IRequestService.ErrorCallback? errorCallback = null)
     {
         return _bus.Subscribe(requestSubject, requestType)
             .SelectMany(b => Observable.FromAsync(async _ =>
             {
-                var response = await createResponse(b.Param, b.Type, b.EventId, b.CorrelationId).ConfigureAwait(false);
+                (object?, Type) response;
+                try
+                {
+                    response = await createResponse(b.Param, b.Type, b.EventId, b.CorrelationId).ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    try
+                    {
+                        errorCallback?.Invoke(e.ToString(), b.EventId, b.CorrelationId, b.Param, b.Type);
+                    }
+                    catch
+                    {
+                        //ignore
+                    }
+                    return Unit.Default;
+                }
 
                 if (!responseType.IsAssignableFrom(response.Item2))
                 {
-                    throw new InvalidOperationException(
-                        $"response type was unexpected. wanted:{responseType} got:{response.Item2}");
+                    errorCallback?.Invoke(
+                        $"response type was unexpected. wanted:{responseType} got:{response.Item2}",
+                        b.EventId, b.CorrelationId, b.Param, b.Type);
                 }
             
                 var targetSubject = GetResponseSubject(responseSubject, b.CorrelationId);
                 //respond to this correlation id
-                await _bus.Publish(targetSubject, responseType, response.Item1, correlationId: b.CorrelationId)
-                    .ConfigureAwait(false);
+                try
+                {
+                    await _bus.Publish(targetSubject, responseType, response.Item1, correlationId: b.CorrelationId)
+                        .ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    try
+                    {
+                        errorCallback?.Invoke(e.ToString(), b.EventId, b.CorrelationId, b.Param, b.Type);
+                    }
+                    catch 
+                    {
+                        //ignore
+                    }
+                }
             
                 //respond to the subject
-                await _bus.Publish(responseSubject, responseType, response.Item1, correlationId: b.CorrelationId).ConfigureAwait(false);
+                try
+                {
+                    await _bus.Publish(responseSubject, responseType, response.Item1, correlationId: b.CorrelationId)
+                        .ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    try
+                    {
+                        errorCallback?.Invoke(e.ToString(), b.EventId, b.CorrelationId, b.Param, b.Type);
+                    }
+                    catch
+                    {
+                        //ignore
+                    }
+                }
+
+                return Unit.Default;
             }))
             .Subscribe();
     }

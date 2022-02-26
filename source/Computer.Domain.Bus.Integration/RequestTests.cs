@@ -40,7 +40,14 @@ public class RequestTests
             return new Response(responseGuid);
         }
         const string requestSubject = "requestSubject";
-        using var sub = _requestService.Listen<Request, Response>(requestSubject, responseSubject, CreateResponse);
+
+        void ErrorCallback(string reason, string? id, string? correlationId, Response? response1)
+        {
+            Assert.Fail(reason);
+        }
+
+        using var sub = _requestService.Listen<Request, Response>(requestSubject, responseSubject, CreateResponse,
+            ErrorCallback);
 
         var request = new Request(requestString, 12.34d);
         
