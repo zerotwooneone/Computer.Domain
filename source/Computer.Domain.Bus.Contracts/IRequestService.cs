@@ -44,6 +44,12 @@ public static class RequestServiceExtensions
             correlationId,
             eventId,
             cancellationToken).ConfigureAwait(false);
+        if (!response.Success)
+        {
+            return TypedResponse<TResponse>.CreateError(response.ErrorReason ?? "Error Reason was null",
+                response.EventId,
+                response.CorrelationId);
+        }
         if (response.EventId == null || response.CorrelationId == null)
         {
             return TypedResponse<TResponse>.CreateError("Response missing event or correlation id.",
